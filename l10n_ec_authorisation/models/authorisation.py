@@ -16,7 +16,7 @@ class AccountAtsDoc(models.Model):
     _name = 'account.ats.doc'
     _description = 'Tipos Comprobantes Autorizados'
 
-    code = fields.Char('Código', size=2, required=True)
+    code = fields.Char(u'Código', size=2, required=True)
     name = fields.Char('Tipo Comprobante', size=64, required=True)
 
 
@@ -35,7 +35,7 @@ class AccountAtsSustento(models.Model):
 
     _rec_name = 'type'
 
-    code = fields.Char('Código', size=2, required=True)
+    code = fields.Char(u'Código', size=2, required=True)
     type = fields.Char('Tipo de Sustento', size=128, required=True)
 
 
@@ -90,21 +90,21 @@ class AccountAuthorisation(models.Model):
                            ('emission_point', '=', values['emission_point']),
                            ('active', '=', True)])
         if res:
-            MSG = u'Ya existe una autorización activa para %s' % self.type_id.name  # noqa
+            MSG = u'Ya existe una autorización activa para %s' % res.type_id.name  # noqa
             raise ValidationError(MSG)
 
         partner_id = self.env.user.company_id.partner_id.id
         if values['partner_id'] == partner_id:
             typ = self.env['account.ats.doc'].browse(values['type_id'])
             name_type = '{0}_{1}'.format(values['name'], values['type_id'])
-            sequence_data = {
-                'code': typ.code == '07' and 'account.retention' or 'account.invoice',  # noqa
-                'name': name_type,
-                'padding': 9,
-                'number_next': values['num_start'],
-                }
-            seq = self.env['ir.sequence'].create(sequence_data)
-            values.update({'sequence_id': seq.id})
+            # sequence_data = {
+            #     'code': typ.code == '07' and 'account.retention' or 'account.invoice',  # noqa
+            #     'name': name_type,
+            #     'padding': 9,
+            #     'number_next': values['num_start'],
+            #     }
+            # seq = self.env['ir.sequence'].create(sequence_data)
+            # values.update({'sequence_id': seq.id})
         return super(AccountAuthorisation, self).create(values)
 
     @api.multi

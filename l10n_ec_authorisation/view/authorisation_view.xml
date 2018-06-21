@@ -8,11 +8,11 @@
             <field name="inherit_id" ref="account.view_account_journal_form"/>
 	    <field name="arch" type="xml">
 		<field name="sequence_id" position="after">
-		    <field name="auth_out_invoice_id" domain="[('in_type','=','interno')]" context="{'default_in_type': 'interno'}"
+		    <field name="auth_out_invoice_id" domain="[('in_type','=','internal')]" context="{'default_in_type': 'internal'}"
 			   attrs="{'invisible': [('type','!=','sale')], 'required': [('type','=','sale')]}"/>
-		    <field name="auth_out_refund_id" domain="[('in_type','=','interno')]" context="{'default_in_type': 'interno'}"
+		    <field name="auth_out_refund_id" domain="[('in_type','=','internal')]" context="{'default_in_type': 'internal'}"
 			   attrs="{'invisible': [('type','!=','sale')], 'required': [('type','=','sale')]}"/>
-		    <field name="auth_retention_id" domain="[('in_type','=','interno')]" context="{'default_in_type': 'interno'}"
+		    <field name="auth_retention_id" domain="[('in_type','=','internal')]" context="{'default_in_type': 'internal'}"
 			   attrs="{'invisible': [('type','!=','purchase')], 'required': [('type','=','purchase')]}"/>
 		</field>
 	    </field>
@@ -24,7 +24,7 @@
             <field name="inherit_id" ref="account.invoice_form"/>
             <field name="arch" type="xml">
                 <field name="fiscal_position_id" position="after">
-                    <field name="auth_inv_id" domain="[('in_type','=','interno')]"
+                    <field name="auth_inv_id" domain="[('in_type','=','internal')]"
                            required="1" options="{'no_create':True, 'no_create_edit': True}"/>
                     <field name="reference" string="Número de Factura"/>
                 </field>
@@ -73,7 +73,7 @@
         <field name="arch" type="xml">
             <notebook position="inside">
                 <page string="Autorizaciones" attrs="{'invisible': [('supplier','!=',True)]}">
-                    <field name="authorisation_ids" nolabel="1" context="{'in_type':'externo', 'default_partner_id': active_id}">
+                    <field name="authorisation_ids" nolabel="1" context="{'in_type':'external', 'default_partner_id': active_id}">
                         <tree string="Autorizaciones" editable="top">
                             <field name="is_electronic"/>
                             <field name="type_id"/>
@@ -116,7 +116,7 @@
                             <field name="is_electronic"/>
                             <field name="type_id" widget="selection"/>
                             <field name="in_type"/>
-                            <field name="partner_id" attrs="{'invisible': [('in_type','=','interno')]}" domain="[('supplier','=',True)]"/>
+                            <field name="partner_id" attrs="{'invisible': [('in_type','=','internal')]}" domain="[('supplier','=',True)]"/>
                             <field name="sequence_id"/>
                         </group>
                         <group>
@@ -180,8 +180,8 @@
         <field name="view_type">form</field>
         <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="view_account_auth_filter"/>
-        <field name="context">{'in_type': 'externo'}</field>
-        <field name="domain">[('in_type', '=', 'externo')]</field>
+        <field name="context">{'in_type': 'external'}</field>
+        <field name="domain">[('in_type', '=', 'external')]</field>
     </record>
 
     <menuitem action="action_account_auth_tree" id="menu_action_authorisation_out" parent="account.menu_finance_payables"/>
@@ -192,8 +192,8 @@
         <field name="view_type">form</field>
         <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="view_account_auth_filter"/>
-        <field name="context">{'in_type': 'interno'}</field>
-        <field name="domain">[('in_type', '=', 'interno')]</field>
+        <field name="context">{'in_type': 'internal'}</field>
+        <field name="domain">[('in_type', '=', 'internal')]</field>
     </record>
 
     <menuitem action="action_account_authin_tree" id="menu_action_authorisation_in" parent="account.account_account_menu"/>
