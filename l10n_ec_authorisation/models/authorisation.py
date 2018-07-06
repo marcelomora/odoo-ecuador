@@ -5,7 +5,7 @@
 import time
 from datetime import datetime
 
-from odoo import api, fields, models
+from odoo import api, fields, models, _
 from odoo.exceptions import (
     ValidationError,
     UserError
@@ -194,7 +194,7 @@ class ResPartner(models.Model):
         for a in self.authorisation_ids:
             if a.active and a.type_id.code == code:
                 return a
-        return False
+        raise ValidationError(_("Not found authorization for document type {}".format(code))) 
 
 
 class AccountJournal(models.Model):

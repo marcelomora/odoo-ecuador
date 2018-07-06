@@ -4,8 +4,9 @@ import base64
 import StringIO
 from datetime import datetime
 
-from openerp import api, fields, models
+from openerp import api, fields, models, _
 from openerp.exceptions import Warning as UserError
+from openerp.exceptions import ValidationError
 from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
 
 
@@ -82,8 +83,8 @@ class Edocument(models.AbstractModel):
             'ruc': company.partner_id.identifier,
             'claveAcceso':  access_key,
             'codDoc': utils.tipoDocumento[auth.type_id.code],
-            'estab': auth.serie_entidad,
-            'ptoEmi': auth.serie_emision,
+            'estab': auth.entity,
+            'ptoEmi': auth.emission_point,
             'secuencial': self.get_secuencial(),
             'dirMatriz': company.street
         }
@@ -109,6 +110,8 @@ class Edocument(models.AbstractModel):
         ruc = self.company_id.partner_id.identifier
         codigo_numero = self.get_code()
         tipo_emision = self.company_id.emission_code
+        if not ruc:
+            raise ValidationError(_("Company has not RUC"))
         access_key = (
             [fecha, tcomp, ruc],
             [numero, codigo_numero, tipo_emision]

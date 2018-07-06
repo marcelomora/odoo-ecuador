@@ -335,7 +335,7 @@ class AccountWithdrawing(models.Model):
             if ret.to_cancel:
                 # FIXME
                 if len(ret.name) == 9 and ret.auth_id.is_valid_number(int(ret.name)):  # noqa
-                    number = ret.auth_id.serie_entidad + ret.auth_id.serie_emision + ret.name  # noqa
+                    number = ret.auth_id.entity + ret.auth_id.emission_point + ret.name  # noqa
                     data.update({'name': number})
                 else:
                     raise UserError(utils.CODE702)

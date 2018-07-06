@@ -14,8 +14,8 @@ tipoDocumento = {
 
 tipoIdentificacion = {
     'ruc': '04',
-    'cedula': '05',
-    'pasaporte': '06',
+    'citizenship_card': '05',
+    'passport': '06',
     'venta_consumidor_final': '07',
     'identificacion_exterior': '08',
     'placa': '09',

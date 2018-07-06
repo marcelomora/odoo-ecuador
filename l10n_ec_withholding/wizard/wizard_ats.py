@@ -129,8 +129,8 @@ class WizardAts(models.TransientModel):
 
     def get_withholding(self, wh):
         return {
-            'estabRetencion1': wh.auth_id.serie_entidad,
-            'ptoEmiRetencion1': wh.auth_id.serie_emision,
+            'estabRetencion1': wh.auth_id.entity,
+            'ptoEmiRetencion1': wh.auth_id.emission_point,
             'secRetencion1': wh.name[6:15],
             'autRetencion1': wh.auth_id.name,
             'fechaEmiRet1': convertir_fecha(wh.date)
@@ -153,8 +153,8 @@ class WizardAts(models.TransientModel):
             auth = refund.auth_inv_id
             return {
                 'docModificado': auth.type_id.code,
-                'estabModificado': auth.serie_entidad,
-                'ptoEmiModificado': auth.serie_emision,
+                'estabModificado': auth.entity,
+                'ptoEmiModificado': auth.emission_point,
                 'secModificado': refund.invoice_number[6:15],
                 'autModificado': refund.reference
             }
@@ -168,8 +168,8 @@ class WizardAts(models.TransientModel):
                 'tipoComprobanteReemb': r.doc_id.code,
                 'tpIdProvReemb': tpIdProv[r.partner_id.type_ced_ruc],
                 'idProvReemb': r.partner_id.ced_ruc,
-                'establecimientoReemb': r.auth_id.serie_entidad,
-                'puntoEmisionReemb': r.auth_id.serie_emision,
+                'establecimientoReemb': r.auth_id.entity,
+                'puntoEmisionReemb': r.auth_id.emission_point,
                 'secuencialReemb': r.secuencial,
                 'fechaEmisionReemb': convertir_fecha(r.date),
                 'autorizacionReemb': r.auth_id.name,
@@ -344,8 +344,8 @@ class WizardAts(models.TransientModel):
             aut = auth.is_electronic and inv.numero_autorizacion or auth.name
             detalleanulados = {
                 'tipoComprobante': auth.type_id.code,
-                'establecimiento': auth.serie_entidad,
-                'ptoEmision': auth.serie_emision,
+                'establecimiento': auth.entity,
+                'ptoEmision': auth.emission_point,
                 'secuencialInicio': inv.invoice_number[6:9],
                 'secuencialFin': inv.invoice_number[6:9],
                 'autorizacion': aut
@@ -362,8 +362,8 @@ class WizardAts(models.TransientModel):
             aut = auth.is_electronic and inv.numero_autorizacion or auth.name
             detalleanulados = {
                 'tipoComprobante': auth.type_id.code,
-                'establecimiento': auth.serie_entidad,
-                'ptoEmision': auth.serie_emision,
+                'establecimiento': auth.entity,
+                'ptoEmision': auth.emission_point,
                 'secuencialInicio': ret.name[6:9],
                 'secuencialFin': ret.name[6:9],
                 'autorizacion': aut

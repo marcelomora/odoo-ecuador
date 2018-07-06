@@ -7,8 +7,9 @@ import itertools
 
 from jinja2 import Environment, FileSystemLoader
 
-from openerp import api, models
+from openerp import api, models, _
 from openerp.exceptions import Warning as UserError
+from openerp.exceptions import ValidationError
 
 from . import utils
 from ..xades.sri import DocumentXML
@@ -35,13 +36,25 @@ class AccountInvoice(models.Model):
 
         company = invoice.company_id
         partner = invoice.partner_id
+        if partner.parent_id:
+            vat_type = partner.parent_id.vat_type
+            identifier = partner.parent_id.identifier
+            partner_name = partner.parent_id.name
+        else:
+            vat_type = partner.vat_type
+            identifier = partner.identifier
+            partner_name = partner.name
+        
+        if not vat_type or not identifier:
+            raise ValidationError(_("Customer has not identifier or identifier type"))
+
         infoFactura = {
             'fechaEmision': fix_date(invoice.date_invoice),
             'dirEstablecimiento': company.street2,
             'obligadoContabilidad': 'SI',
-            'tipoIdentificacionComprador': utils.tipoIdentificacion[partner.type_identifier],  # noqa
-            'razonSocialComprador': partner.name,
-            'identificacionComprador': partner.identifier,
+            'tipoIdentificacionComprador': utils.tipoIdentificacion[vat_type],  # noqa
+            'razonSocialComprador': partner_name,
+            'identificacionComprador': identifier,
             'totalSinImpuestos': '%.2f' % (invoice.amount_untaxed),
             'totalDescuento': '0.00',
             'propina': '0.00',
@@ -54,9 +67,10 @@ class AccountInvoice(models.Model):
         if company.company_registry:
             infoFactura.update({'contribuyenteEspecial':
                                 company.company_registry})
-        else:
-            raise UserError('No ha determinado si es contribuyente especial.')
+        # else:
+        #     raise UserError('No ha determinado si es contribuyente especial.')
 
+        import wdb; wdb.set_trace()
         totalConImpuestos = []
         for tax in invoice.tax_line_ids:
             if tax.group_id.code in ['vat', 'vat0', 'ice']:
@@ -176,6 +190,7 @@ class AccountInvoice(models.Model):
         TODO: usar celery para enviar a cola de tareas
         la generacion de la factura y envio de email
         """
+        # import wdb; wdb.set_trace()
         for obj in self:
             if obj.type not in ['out_invoice', 'out_refund']:
                 continue

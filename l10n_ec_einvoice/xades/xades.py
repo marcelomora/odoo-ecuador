@@ -58,6 +58,7 @@ class Xades(object):
         JAR_PATH = 'firma/firmaXadesBes.jar'
         JAVA_CMD = 'java'
         firma_path = os.path.join(os.path.dirname(__file__), JAR_PATH)
+        import wdb; wdb.set_trace()
         command = [
             JAVA_CMD,
             '-jar',

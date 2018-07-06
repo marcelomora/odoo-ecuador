@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import logging
+import base64
 from openerp import models, fields, api
+
+
+_logger = logging.getLogger(__name__)
 
 
 class Company(models.Model):
@@ -8,8 +13,7 @@ class Company(models.Model):
     _inherit = 'res.company'
 
     electronic_signature = fields.Char(
-        'Firma Electrónica',
-        size=128,
+        'Cert Path',
     )
     password_electronic_signature = fields.Char(
         'Clave Firma Electrónica',
@@ -39,7 +43,6 @@ class Company(models.Model):
         'Claves de Contingencia',
         help='Claves de contingencia relacionadas con esta empresa.'
     )
-
 
 class CompanyContingencyKey(models.Model):
 

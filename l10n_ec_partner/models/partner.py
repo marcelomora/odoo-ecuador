@@ -33,11 +33,11 @@ class ResPartner(models.Model):
     @api.depends('vat', 'name')
     def _compute_display_name(self):
         """Name get method."""
-        self.ensure_one()
-        self.display_name = u'[{0}]{1}'.format(
-            self.vat and self.vat[2:] or '*',
-            self.name
-        )
+        for partner in self:
+            partner.display_name = u'[{0}]{1}'.format(
+                partner.vat and partner.vat[2:] or '*',
+                partner.name
+            )
 
     @api.model
     def name_search(self, name, args=None, operator='ilike', limit=80):
@@ -54,17 +54,17 @@ class ResPartner(models.Model):
     @api.multi
     @api.constrains('vat')
     def _check_vat(self):
-        self.ensure_one()
-        val_func_dict = {'citizenship_card': ec.ci.is_valid,
-                         'ruc': ec.ruc.is_valid
-                         }
-        if self.vat_type == 'passport':
-            return True
+        for partner in self:
+            val_func_dict = {'citizenship_card': ec.ci.is_valid,
+                            'ruc': ec.ruc.is_valid
+                            }
+            if partner.vat_type == 'passport':
+                return True
 
-        if val_func_dict[self.vat_type](self.vat[2:]):
-            return True
-        else:
-            raise ValidationError('Error en el identificador.')
+            if val_func_dict[partner.vat_type](partner.vat[2:]):
+                return True
+            else:
+                raise ValidationError('Error en el identificador.')
 
     @api.one
     @api.depends('vat')
