@@ -68,12 +68,12 @@ class AccountWithdrawing(models.Model):
             impuestos.append(impuesto)
         return {'impuestos': impuestos}
 
-    def render_document(self, document, access_key, emission_code):
+    def render_document(self, document, access_key, issuing_code):
         tmpl_path = os.path.join(os.path.dirname(__file__), 'templates')
         env = Environment(loader=FileSystemLoader(tmpl_path))
         ewithdrawing_tmpl = env.get_template('ewithdrawing.xml')
         data = {}
-        data.update(self._info_tributaria(document, access_key, emission_code))
+        data.update(self._info_tributaria(document, access_key, issuing_code))
         data.update(self._info_withdrawing(document))
         data.update(self._impuestos(document))
         edocument = ewithdrawing_tmpl.render(data)
@@ -101,8 +101,8 @@ class AccountWithdrawing(models.Model):
         for obj in self:
             self.check_date(obj.date)
             self.check_before_sent()
-            access_key, emission_code = self._get_codes('account.retention')
-            ewithdrawing = self.render_document(obj, access_key, emission_code)
+            access_key, issuing_code = self._get_codes('account.retention')
+            ewithdrawing = self.render_document(obj, access_key, issuing_code)
             self._logger.debug(ewithdrawing)
             inv_xml = DocumentXML(ewithdrawing, 'withdrawing')
             inv_xml.validate_xml()
@@ -118,7 +118,7 @@ class AccountWithdrawing(models.Model):
                 msg = ' '.join(list(itertools.chain(*m)))
                 raise UserError(msg)
             auth_document = self.render_authorized_document(auth)
-            self.update_document(auth, [access_key, emission_code])
+            self.update_document(auth, [access_key, issuing_code])
             attach = self.add_attachment(auth_document, auth)
             self.send_document(
                 attachments=[a.id for a in attach],

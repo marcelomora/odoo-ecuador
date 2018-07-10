@@ -19,12 +19,12 @@ class Company(models.Model):
         'Clave Firma Electrónica',
         size=255,
     )
-    emission_code = fields.Selection(
+    issuing_code = fields.Selection(
         [
             ('1', 'Normal'),
             ('2', 'Indisponibilidad')
         ],
-        string='Tipo de Emisión',
+        string='Issuing Type',
         required=True,
         default=1
     )

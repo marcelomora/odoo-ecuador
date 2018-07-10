@@ -114,6 +114,7 @@ class ResPartner(models.Model):
         SRI_LINK = "https://declaraciones.sri.gob.ec/facturacion-internet/consultas/publico/ruc-datos1.jspa"  # noqa
         texto = '0103893954'  # noqa
 
+    #TODO: Change to a contact friendly vat unique constraint
     _sql_constraints = {
         ('vat_unique', 'UNIQUE(vat)', 'VAT number must be unique!')
     }

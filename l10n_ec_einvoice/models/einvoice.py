@@ -70,7 +70,6 @@ class AccountInvoice(models.Model):
         # else:
         #     raise UserError('No ha determinado si es contribuyente especial.')
 
-        import wdb; wdb.set_trace()
         totalConImpuestos = []
         for tax in invoice.tax_line_ids:
             if tax.group_id.code in ['vat', 'vat0', 'ice']:
@@ -156,12 +155,12 @@ class AccountInvoice(models.Model):
         total = sum([float(det['descuento']) for det in detalles['detalles']])
         return {'totalDescuento': total}
 
-    def render_document(self, invoice, access_key, emission_code):
+    def render_document(self, invoice, access_key, issuing_code):
         tmpl_path = os.path.join(os.path.dirname(__file__), 'templates')
         env = Environment(loader=FileSystemLoader(tmpl_path))
         einvoice_tmpl = env.get_template(self.TEMPLATES[self.type])
         data = {}
-        data.update(self._info_tributaria(invoice, access_key, emission_code))
+        data.update(self._info_tributaria(invoice, access_key, issuing_code))
         data.update(self._info_factura(invoice))
         detalles = self._detalles(invoice)
         data.update(detalles)
@@ -183,6 +182,30 @@ class AccountInvoice(models.Model):
         auth_invoice = einvoice_tmpl.render(auth_xml)
         return auth_invoice
 
+    @api.model
+    def save_xml_file(self, access_key, xml):
+        xades = Xades()
+        Attachment = self.env['ir.attachment']
+
+        old = Attachment.search(
+            [('res_id', '=', self.id),
+             ('res_model', '=', 'account.invoice')])
+        if old:
+            old.unlink()
+
+        signed_document = xades.sign(xml, 'firma/certificado.p12', 'Yosai007')
+        if access_key and xml:
+            Attachment.create({
+                'name': access_key,
+                'datas': signed_document.encode('base64'),
+                'res_model': 'account.invoice',
+                'res_name': '001-001-000000001',
+                'res_id': self.id,
+            })
+            return True
+        raise ValidationError(
+            _("Attempt to save an empty xml file: {}".format(access_key)))
+
     @api.multi
     def action_generate_einvoice(self):
         """
@@ -190,49 +213,49 @@ class AccountInvoice(models.Model):
         TODO: usar celery para enviar a cola de tareas
         la generacion de la factura y envio de email
         """
-        # import wdb; wdb.set_trace()
         for obj in self:
             if obj.type not in ['out_invoice', 'out_refund']:
                 continue
             self.check_date(obj.date_invoice)
             self.check_before_sent()
-            access_key, emission_code = self._get_codes(name='account.invoice')
-            einvoice = self.render_document(obj, access_key, emission_code)
+            access_key, issuing_code = self._get_codes(name='account.invoice')
+            einvoice = self.render_document(obj, access_key, issuing_code)
             inv_xml = DocumentXML(einvoice, obj.type)
             inv_xml.validate_xml()
+            self.save_xml_file(access_key, einvoice)
             xades = Xades()
             file_pk12 = obj.company_id.electronic_signature
             password = obj.company_id.password_electronic_signature
             signed_document = xades.sign(einvoice, file_pk12, password)
             ok, errores = inv_xml.send_receipt(signed_document)
-            if not ok:
-                raise UserError(errores)
-            auth, m = inv_xml.request_authorization(access_key)
-            if not auth:
-                msg = ' '.join(list(itertools.chain(*m)))
-                raise UserError(msg)
-            auth_einvoice = self.render_authorized_einvoice(auth)
-            self.update_document(auth, [access_key, emission_code])
-            attach = self.add_attachment(auth_einvoice, auth)
-            message = """
-            DOCUMENTO ELECTRONICO GENERADO <br><br>
-            CLAVE DE ACCESO: %s <br>
-            NUMERO DE AUTORIZACION %s <br>
-            FECHA AUTORIZACION: %s <br>
-            ESTADO DE AUTORIZACION: %s <br>
-            AMBIENTE: %s <br>
-            """ % (
-                self.clave_acceso,
-                self.numero_autorizacion,
-                self.fecha_autorizacion,
-                self.estado_autorizacion,
-                self.ambiente
-            )
-            self.message_post(body=message)
-            self.send_document(
-                attachments=[a.id for a in attach],
-                tmpl='l10n_ec_einvoice.email_template_einvoice'
-            )
+            # if not ok:
+            #     raise UserError(errores)
+            # auth, m = inv_xml.request_authorization(access_key)
+            # if not auth:
+            #     msg = ' '.join(list(itertools.chain(*m)))
+            #     raise UserError(msg)
+            # auth_einvoice = self.render_authorized_einvoice(auth)
+            # self.update_document(auth, [access_key, issuing_code])
+            # attach = self.add_attachment(auth_einvoice, auth)
+            # message = """
+            # DOCUMENTO ELECTRONICO GENERADO <br><br>
+            # CLAVE DE ACCESO: %s <br>
+            # NUMERO DE AUTORIZACION %s <br>
+            # FECHA AUTORIZACION: %s <br>
+            # ESTADO DE AUTORIZACION: %s <br>
+            # AMBIENTE: %s <br>
+            # """ % (
+            #     self.clave_acceso,
+            #     self.numero_autorizacion,
+            #     self.fecha_autorizacion,
+            #     self.estado_autorizacion,
+            #     self.ambiente
+            # )
+            # self.message_post(body=message)
+            # self.send_document(
+            #     attachments=[a.id for a in attach],
+            #     tmpl='l10n_ec_einvoice.email_template_einvoice'
+            # )
 
     @api.multi
     def invoice_print(self):

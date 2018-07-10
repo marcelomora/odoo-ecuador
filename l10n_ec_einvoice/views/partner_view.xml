@@ -13,7 +13,7 @@
               <group>
                 <field name="electronic_signature" required="1"/>
                 <field name="password_electronic_signature" password="1" required="1"/>
-                <field name="emission_code"/>
+                <field name="issuing_code"/>
                 <field name="env_service"/>
               </group>
               <group string="Claves de Contingencia">

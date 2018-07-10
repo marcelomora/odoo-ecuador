@@ -15,7 +15,9 @@
   </infoTributaria>
   <infoFactura>
     <fechaEmision>{{ fechaEmision }}</fechaEmision> {# dd/mm/aaaa #}
-    <contribuyenteEspecial>{{ contribuyenteEspecial }}</contribuyenteEspecial>
+    {% if contribuyenteEspecial %}
+      <contribuyenteEspecial>{{ contribuyenteEspecial }}</contribuyenteEspecial>
+    {% endif %}
     <obligadoContabilidad>{{ obligadoContabilidad }}</obligadoContabilidad>
     <tipoIdentificacionComprador>{{ tipoIdentificacionComprador }}</tipoIdentificacionComprador>
     <razonSocialComprador>{{ razonSocialComprador }}</razonSocialComprador>
@@ -23,6 +25,7 @@
     <totalSinImpuestos>{{ totalSinImpuestos }}</totalSinImpuestos>
     <totalDescuento>{{ totalDescuento }}</totalDescuento>
     <totalConImpuestos>
+      {%if totalConImpuestos %}
       {% for item in totalConImpuestos %}
       <totalImpuesto>
         <codigo>{{ item['codigo'] }}</codigo>
@@ -32,7 +35,16 @@
         <valor>{{ item['valor'] }}</valor>
       </totalImpuesto>
       {% endfor %}
+      {% else %}
+      <totalImpuesto>
+        <codigo>2</codigo>
+        <codigoPorcentaje>7</codigoPorcentaje>
+        <baseImponible>{{ totalSinImpuestos }}</baseImponible>
+        <valor>0.00</valor>
+      </totalImpuesto>
+      {% endif %}  
     </totalConImpuestos>
+
     {% if compensaciones %}
     <compensaciones>
         {% for c in comp %}

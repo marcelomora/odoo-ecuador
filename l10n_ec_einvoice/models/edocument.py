@@ -7,11 +7,12 @@ from datetime import datetime
 from openerp import api, fields, models, _
 from openerp.exceptions import Warning as UserError
 from openerp.exceptions import ValidationError
-from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
+from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
 
 
 from . import utils
 from ..xades.sri import SriService
+from ..xades.xades import CheckDigit
 
 
 class AccountEpayment(models.Model):
@@ -32,33 +33,29 @@ class Edocument(models.AbstractModel):
 
     clave_acceso = fields.Char(
         'Clave de Acceso',
-        size=49,
-        readonly=True
+        readonly=True,
     )
     numero_autorizacion = fields.Char(
         'Número de Autorización',
-        size=37,
-        readonly=True
+        readonly=True,
     )
     estado_autorizacion = fields.Char(
         'Estado de Autorización',
-        size=64,
-        readonly=True
+        readonly=True,
     )
     fecha_autorizacion = fields.Datetime(
         'Fecha Autorización',
-        readonly=True
+        readonly=True,
     )
     ambiente = fields.Char(
         'Ambiente',
-        size=64,
-        readonly=True
+        readonly=True,
     )
-    autorizado_sri = fields.Boolean('¿Autorizado SRI?', readonly=True)
-    security_code = fields.Char('Código de Seguridad', size=8, readonly=True)
-    emission_code = fields.Char('Tipo de Emisión', size=1, readonly=True)
-    epayment_id = fields.Many2one('account.epayment', 'Forma de Pago')
-    sent = fields.Boolean('Enviado?')
+    autorizado_sri = fields.Boolean('Authorized?', readonly=True)
+    security_code = fields.Char('Security Code', size=8, readonly=True)
+    issuing_code = fields.Char('Issuing Code', size=1, readonly=True)
+    epayment_id = fields.Many2one('account.epayment', 'Payment Form')
+    sent = fields.Boolean('Sent?')
 
     def get_auth(self, document):
         partner = document.company_id.partner_id
@@ -70,17 +67,17 @@ class Edocument(models.AbstractModel):
     def get_secuencial(self):
         return getattr(self, self._FIELDS[self._name])[6:]
 
-    def _info_tributaria(self, document, access_key, emission_code):
+    def _info_tributaria(self, document, access_key, issuing_code):
         """
         """
         company = document.company_id
         auth = self.get_auth(document)
         infoTributaria = {
             'ambiente': self.env.user.company_id.env_service,
-            'tipoEmision': emission_code,
+            'tipoEmision': issuing_code,
             'razonSocial': company.name,
             'nombreComercial': company.name,
-            'ruc': company.partner_id.identifier,
+            'ruc': company.partner_id.vat and company.partner_id.vat[2:] or "9999999999",
             'claveAcceso':  access_key,
             'codDoc': utils.tipoDocumento[auth.type_id.code],
             'estab': auth.entity,
@@ -93,9 +90,10 @@ class Edocument(models.AbstractModel):
     def get_code(self):
         code = self.env['ir.sequence'].next_by_code('edocuments.code')
         return code
-
-    def get_access_key(self, name):
+    
+    def _prepare_access_key(self, name):
         if name == 'account.invoice':
+            seq = "{:09d}".format(int(self.reference)) 
             auth = self.company_id.partner_id.get_authorisation('out_invoice')
             ld = self.date_invoice.split('-')
             numero = getattr(self, 'invoice_number')
@@ -104,27 +102,36 @@ class Edocument(models.AbstractModel):
             ld = self.date.split('-')
             numero = getattr(self, 'name')
             numero = numero[6:15]
-        ld.reverse()
-        fecha = ''.join(ld)
-        tcomp = utils.tipoDocumento[auth.type_id.code]
-        ruc = self.company_id.partner_id.identifier
-        codigo_numero = self.get_code()
-        tipo_emision = self.company_id.emission_code
-        if not ruc:
-            raise ValidationError(_("Company has not RUC"))
-        access_key = (
-            [fecha, tcomp, ruc],
-            [numero, codigo_numero, tipo_emision]
-            )
-        return access_key
+        return {
+            'issuing_date': datetime.strptime(
+                self.date, DEFAULT_SERVER_DATE_FORMAT).strftime(
+                    "%d%m%Y"
+                ),
+            'voucher_type': utils.tipoDocumento[auth.type_id.code],
+            'vat': self.company_id.partner_id.vat[2:],
+            'env_service': self.company_id.env_service,
+            'series': "{}{}".format(self.auth_inv_id.entity,
+                self.auth_inv_id.emission_point),
+            'voucher_number': "{:09d}".format(int(self.reference)),
+            'internal_code': "{:08d}".format(0),
+            'issuing_type': self.company_id.issuing_code,
+        }
+
+    def get_access_key(self, name):
+        val = "{issuing_date:4s}" +\
+              "{voucher_type:2s}" +\
+              "{vat:13s}" +\
+              "{env_service:1s}" +\
+              "{series:6s}" +\
+              "{voucher_number:9s}" +\
+              "{internal_code:8s}" +\
+              "{issuing_type:1s}"
+        access_key = val.format(**self._prepare_access_key(name))
+        return "{}{:1d}".format(access_key, CheckDigit.compute_mod11(access_key)) 
 
     @api.multi
     def _get_codes(self, name='account.invoice'):
-        ak_temp = self.get_access_key(name)
-        self.SriServiceObj.set_active_env(self.env.user.company_id.env_service)
-        access_key = self.SriServiceObj.create_access_key(ak_temp)
-        emission_code = self.company_id.emission_code
-        return access_key, emission_code
+        return self.get_access_key(name), self.company_id.issuing_code
 
     @api.multi
     def check_before_sent(self):
@@ -180,7 +187,7 @@ class Edocument(models.AbstractModel):
             'fecha_autorizacion': fecha,  # noqa
             'autorizado_sri': True,
             'clave_acceso': codes[0],
-            'emission_code': codes[1]
+            'issuing_code': codes[1]
         })
 
     @api.one
@@ -213,5 +220,5 @@ class Edocument(models.AbstractModel):
         self.sent = True
         return True
 
-    def render_document(self, document, access_key, emission_code):
+    def render_document(self, document, access_key, issuing_code):
         pass

@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import requests
+import logging
+
+_logger = logging.getLogger("utils")
 
 
 tipoDocumento = {
@@ -83,18 +86,17 @@ WS_TEST_AUTH = 'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/Autorizac
 WS_RECEIV = 'https://cel.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantes?wsdl'  # noqa
 WS_AUTH = 'https://cel.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantes?wsdl'  # noqa
 
+WS_TEST_OFFLINE_RECEIV = 'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl'  # noqa
+WS_TEST_OFFLINE_AUTH = 'https://celcer.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline?wsdl'  # noqa
+WS_OFFLINE_RECEIV = 'https://cel.sri.gob.ec/comprobantes-electronicos-ws/RecepcionComprobantesOffline?wsdl'  # noqa
+WS_OFFLINE_AUTH = 'https://cel.sri.gob.ec/comprobantes-electronicos-ws/AutorizacionComprobantesOffline?wsdl'  # noqa
 
 def check_service(env='prueba'):
-    flag = False
-    if env == 'prueba':
-        URL = WS_TEST_RECEIV
-    else:
-        URL = WS_RECEIV
-
-    for i in [1, 2, 3]:
-        try:
-            res = requests.head(URL, timeout=3)
-            flag = True
-        except requests.exceptions.RequestException:
-            return flag, False
-    return flag, res
+    url = env == 'prueba' and WS_TEST_OFFLINE_RECEIV or WS_OFFLINE_RECEIV 
+    try:
+        res = requests.head(url, timeout=3)
+        _logger.info(res)
+        return True
+    except requests.exceptions.RequestException:
+        _logger.info("SRI service not available")
+        return False

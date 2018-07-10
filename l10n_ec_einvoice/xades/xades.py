@@ -5,6 +5,8 @@ import os
 import subprocess
 import logging
 
+_logger = logging.getLogger(__name__)
+
 
 class CheckDigit(object):
 
@@ -58,13 +60,15 @@ class Xades(object):
         JAR_PATH = 'firma/firmaXadesBes.jar'
         JAVA_CMD = 'java'
         firma_path = os.path.join(os.path.dirname(__file__), JAR_PATH)
-        import wdb; wdb.set_trace()
+        file_pk12_path = os.path.join(os.path.dirname(__file__), file_pk12)
+        _logger.info(firma_path)
+        _logger.info(file_pk12_path)
         command = [
             JAVA_CMD,
             '-jar',
             firma_path,
             xml_str,
-            base64.b64encode(file_pk12),
+            base64.b64encode(file_pk12_path),
             base64.b64encode(password)
         ]
         try:

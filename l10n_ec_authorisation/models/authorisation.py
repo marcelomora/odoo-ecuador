@@ -49,11 +49,14 @@ class AccountAuthorisation(models.Model):
     def name_get(self):
         res = []
         for record in self:
-            name = u'%s (%s-%s)' % (
-                record.type_id.code,
-                record.num_start,
-                record.num_end
-            )
+            if record.is_electronic:
+                name = "{} (Electronic)".format(record.type_id.code)
+            else:
+                name = u'%s (%s-%s)' % (
+                    record.type_id.code,
+                    record.num_start,
+                    record.num_end
+                )
             res.append((record.id, name))
         return res
 
@@ -64,7 +67,7 @@ class AccountAuthorisation(models.Model):
         Check the due_date to give the value active field
         """
         if not self.expiration_date:
-            return
+            return True
         now = datetime.strptime(time.strftime("%Y-%m-%d"), '%Y-%m-%d')
         due_date = datetime.strptime(self.expiration_date, '%Y-%m-%d')
         self.active = now < due_date
@@ -251,16 +254,17 @@ class AccountInvoice(models.Model):
         'state',
         'reference'
     )
+    @api.depends('auth_inv_id', 'reference')
     def _compute_invoice_number(self):
         """
         Calcula el numero de factura segun el
         establecimiento seleccionado
         """
         if self.reference:
-            self.invoice_number = '{0}{1}{2}'.format(
+            self.invoice_number = '{}{}{:09d}'.format(
                 self.auth_inv_id.entity,
                 self.auth_inv_id.emission_point,
-                self.reference
+                int(self.reference)
             )
         else:
             self.invoice_number = '*'
