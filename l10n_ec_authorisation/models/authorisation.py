@@ -4,12 +4,16 @@
 
 import time
 from datetime import datetime
+import re
+import logging
 
 from odoo import api, fields, models, _
 from odoo.exceptions import (
     ValidationError,
     UserError
 )
+
+_logger = logging.getLogger(__name__)
 
 
 class AccountAtsDoc(models.Model):
@@ -222,19 +226,19 @@ class AccountInvoice(models.Model):
 
     _DOCUMENTOS_EMISION = ['out_invoice', 'liq_purchase', 'out_refund']
 
-    @api.onchange('journal_id', 'auth_inv_id')
-    def _onchange_journal_id(self):
-        super(AccountInvoice, self)._onchange_journal_id()
-        if self.journal_id and self.type in self._DOCUMENTOS_EMISION:
-            if self.type == 'out_invoice':
-                self.auth_inv_id = self.journal_id.auth_out_invoice_id
-            elif self.type == 'out_refund':
-                self.auth_inv_id = self.journal_id.auth_out_refund_id
-            self.auth_number = not self.auth_inv_id.is_electronic and self.auth_inv_id.name  # noqa
-            number = '{0}'.format(
-                str(self.auth_inv_id.sequence_id.number_next_actual).zfill(9)
-            )
-            self.reference = number
+    # @api.onchange('journal_id', 'auth_inv_id')
+    # def _onchange_journal_id(self):
+    #     super(AccountInvoice, self)._onchange_journal_id()
+    #     if self.journal_id and self.type in self._DOCUMENTOS_EMISION:
+    #         if self.type == 'out_invoice':
+    #             self.auth_inv_id = self.journal_id.auth_out_invoice_id
+    #         elif self.type == 'out_refund':
+    #             self.auth_inv_id = self.journal_id.auth_out_refund_id
+    #         self.auth_number = not self.auth_inv_id.is_electronic and self.auth_inv_id.name  # noqa
+    #         number = '{:09d}'.format(
+    #             self.auth_inv_id.sequence_id.number_next_actual
+    #         )
+    #         self.reference = number
 
     @api.onchange('partner_id', 'company_id')
     def _onchange_partner_id(self):
@@ -261,10 +265,10 @@ class AccountInvoice(models.Model):
         establecimiento seleccionado
         """
         if self.reference:
-            self.invoice_number = '{}{}{:09d}'.format(
+            self.invoice_number = '{}{}{}'.format(
                 self.auth_inv_id.entity,
                 self.auth_inv_id.emission_point,
-                int(self.reference)
+                self.reference
             )
         else:
             self.invoice_number = '*'
@@ -295,7 +299,7 @@ class AccountInvoice(models.Model):
         (
             'unique_invoice_number',
             'unique(reference,type,partner_id,state)',
-            u'El número de factura es único.'
+            'Invoice number must be unique.'
         )
     ]
 
@@ -352,13 +356,17 @@ class AccountInvoice(models.Model):
 
     @api.multi
     def action_invoice_open(self):
-        # lots of duplicate calls to action_invoice_open,
-        # so we remove those already open
-        # redefined for numbering document
-        to_open_invoices = self.filtered(lambda inv: inv.state != 'open')
-        if to_open_invoices.filtered(lambda inv: inv.state not in ['proforma2', 'draft']):  # noqa
-            raise UserError(_("Invoice must be in draft or Pro-forma state in order to validate it."))  # noqa
-        to_open_invoices.action_date_assign()
-        to_open_invoices.action_move_create()
-        to_open_invoices.action_number()
-        return to_open_invoices.invoice_validate()
+        res = super(AccountInvoice, self).action_invoice_open()
+        for inv in self:
+            if inv.journal_id and inv.type in self._DOCUMENTOS_EMISION:
+                if inv.type == 'out_invoice':
+                    inv.auth_inv_id = inv.journal_id.auth_out_invoice_id
+                elif inv.type == 'out_refund':
+                    inv.auth_inv_id = inv.journal_id.auth_out_refund_id
+                number = inv.auth_inv_id.sequence_id.next_by_id()
+                if re.match("\d{9}", number) is None:
+                    _logger.info(number)
+                    raise ValidationError(_("Sequence must be filled with 9 zeros"))
+                inv.reference = number
+        return res
+

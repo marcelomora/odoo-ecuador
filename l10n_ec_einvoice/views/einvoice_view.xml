@@ -89,6 +89,11 @@
                 <field name="ambiente"/>
                 <field name="autorizado_sri"/>
             </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Electronic Vouchers">
+                    <field name="xml"></field>
+                </page>
+            </xpath>
         </field>
     </record>
     <!-- eRetention Form -->

@@ -114,7 +114,8 @@ class AccountInvoice(models.Model):
                 [u'%', ' '],
                 [u'º', ' '],
                 [u'Ñ', 'N'],
-                [u'ñ', 'n']
+                [u'ñ', 'n'],
+                ['\n', ' '],
             ]
             for f, r in special:
                 code = code.replace(f, r)
@@ -222,40 +223,40 @@ class AccountInvoice(models.Model):
             einvoice = self.render_document(obj, access_key, issuing_code)
             inv_xml = DocumentXML(einvoice, obj.type)
             inv_xml.validate_xml()
-            self.save_xml_file(access_key, einvoice)
             xades = Xades()
             file_pk12 = obj.company_id.electronic_signature
             password = obj.company_id.password_electronic_signature
-            signed_document = xades.sign(einvoice, file_pk12, password)
-            ok, errores = inv_xml.send_receipt(signed_document)
-            # if not ok:
-            #     raise UserError(errores)
-            # auth, m = inv_xml.request_authorization(access_key)
-            # if not auth:
-            #     msg = ' '.join(list(itertools.chain(*m)))
-            #     raise UserError(msg)
-            # auth_einvoice = self.render_authorized_einvoice(auth)
-            # self.update_document(auth, [access_key, issuing_code])
-            # attach = self.add_attachment(auth_einvoice, auth)
-            # message = """
-            # DOCUMENTO ELECTRONICO GENERADO <br><br>
-            # CLAVE DE ACCESO: %s <br>
-            # NUMERO DE AUTORIZACION %s <br>
-            # FECHA AUTORIZACION: %s <br>
-            # ESTADO DE AUTORIZACION: %s <br>
-            # AMBIENTE: %s <br>
-            # """ % (
-            #     self.clave_acceso,
-            #     self.numero_autorizacion,
-            #     self.fecha_autorizacion,
-            #     self.estado_autorizacion,
-            #     self.ambiente
-            # )
-            # self.message_post(body=message)
-            # self.send_document(
-            #     attachments=[a.id for a in attach],
-            #     tmpl='l10n_ec_einvoice.email_template_einvoice'
-            # )
+            self.xml = xades.sign(einvoice, file_pk12, password)
+            ok, errores = inv_xml.send_receipt(self.xml)
+            if not ok:
+                raise UserError(errores)
+            auth, m = inv_xml.request_authorization(access_key)
+            if not auth:
+                msg = ' '.join(list(itertools.chain(*m)))
+                raise UserError(msg)
+            auth_einvoice = self.render_authorized_einvoice(auth)
+            self.update_document(auth, [access_key, issuing_code])
+            self.save_xml_file(access_key, einvoice)
+            attach = self.add_attachment(auth_einvoice, auth)
+            message = """
+            DOCUMENTO ELECTRONICO GENERADO <br><br>
+            CLAVE DE ACCESO: %s <br>
+            NUMERO DE AUTORIZACION %s <br>
+            FECHA AUTORIZACION: %s <br>
+            ESTADO DE AUTORIZACION: %s <br>
+            AMBIENTE: %s <br>
+            """ % (
+                self.clave_acceso,
+                self.numero_autorizacion,
+                self.fecha_autorizacion,
+                self.estado_autorizacion,
+                self.ambiente
+            )
+            self.message_post(body=message)
+            self.send_document(
+                attachments=[a.id for a in attach],
+                tmpl='l10n_ec_einvoice.email_template_einvoice'
+            )
 
     @api.multi
     def invoice_print(self):
@@ -263,3 +264,19 @@ class AccountInvoice(models.Model):
             self,
             'l10n_ec_einvoice.report_einvoice'
         )
+
+    @api.multi
+    def action_invoice_open(self):
+        res = super(AccountInvoice, self).action_invoice_open()
+        xades = Xades()
+        for inv in self:
+            if inv.auth_inv_id.is_electronic:
+                access_key, issuing_code = inv._get_codes(name='account.invoice')
+                einvoice = self.render_document(inv, access_key, issuing_code)
+                inv.clave_acceso = access_key
+                file_pk12 = inv.company_id.electronic_signature
+                password = inv.company_id.password_electronic_signature
+                self.xml = xades.sign(einvoice, file_pk12, password)
+        return res
+
+

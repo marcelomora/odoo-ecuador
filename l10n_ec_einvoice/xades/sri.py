@@ -70,14 +70,12 @@ class DocumentXML(object):
         buffer_xml = base64.encodestring(buf.getvalue())
 
         if not utils.check_service('prueba'):
-            # TODO: implementar modo offline
             raise Exception('Servicio SRI no disponible.')
 
         client = Client(SriService.get_active_ws()[0])
         result = client.service.validarComprobante(buffer_xml)
         self.logger.info('Estado de respuesta documento: %s' % result.estado)
         errores = []
-        import wdb; wdb.set_trace()
     
         if result.estado == 'RECIBIDA':
             return True, errores

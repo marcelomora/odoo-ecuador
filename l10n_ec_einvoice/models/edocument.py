@@ -56,6 +56,7 @@ class Edocument(models.AbstractModel):
     issuing_code = fields.Char('Issuing Code', size=1, readonly=True)
     epayment_id = fields.Many2one('account.epayment', 'Payment Form')
     sent = fields.Boolean('Sent?')
+    xml = fields.Text('XML', readonly=True)
 
     def get_auth(self, document):
         partner = document.company_id.partner_id

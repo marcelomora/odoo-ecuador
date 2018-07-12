@@ -25,7 +25,7 @@ TYPE2JOURNAL = {
 }
 
 
-class Invoice(models.Model):
+class AccountInvoice(models.Model):
 
     _inherit = 'account.invoice'
     __logger = logging.getLogger(_inherit)
@@ -280,14 +280,15 @@ class Invoice(models.Model):
         # lots of duplicate calls to action_invoice_open,
         # so we remove those already open
         # redefined to create withholding and numbering
-        to_open_invoices = self.filtered(lambda inv: inv.state != 'open')
-        if to_open_invoices.filtered(lambda inv: inv.state not in ['proforma2', 'draft']):  # noqa
-            raise UserError(_("Invoice must be in draft or Pro-forma state in order to validate it."))  # noqa
-        to_open_invoices.action_date_assign()
-        to_open_invoices.action_move_create()
-        to_open_invoices.action_number()
-        to_open_invoices.action_withholding_create()
-        return to_open_invoices.invoice_validate()
+        return super(AccountInvoice, self).action_invoice_open()
+        # to_open_invoices = self.filtered(lambda inv: inv.state != 'open')
+        # if to_open_invoices.filtered(lambda inv: inv.state not in ['proforma2', 'draft']):  # noqa
+        #     raise UserError(_("Invoice must be in draft or Pro-forma state in order to validate it."))  # noqa
+        # to_open_invoices.action_date_assign()
+        # to_open_invoices.action_move_create()
+        # to_open_invoices.action_number()
+        # to_open_invoices.action_withholding_create()
+        # return to_open_invoices.invoice_validate()
 
     @api.multi
     def action_invoice_cancel(self):

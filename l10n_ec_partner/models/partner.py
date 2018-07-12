@@ -115,9 +115,9 @@ class ResPartner(models.Model):
         texto = '0103893954'  # noqa
 
     #TODO: Change to a contact friendly vat unique constraint
-    _sql_constraints = {
-        ('vat_unique', 'UNIQUE(vat)', 'VAT number must be unique!')
-    }
+    # _sql_constraints = {
+    #     ('vat_unique', 'UNIQUE(vat)', 'VAT number must be unique!')
+    # }
 
 
 class ResCompany(models.Model):
