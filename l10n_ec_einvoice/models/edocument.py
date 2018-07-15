@@ -7,7 +7,7 @@ from datetime import datetime
 from openerp import api, fields, models, _
 from openerp.exceptions import Warning as UserError
 from openerp.exceptions import ValidationError
-from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
+from openerp.tools import DEFAULT_SERVER_DATE_FORMAT, DEFAULT_SERVER_DATETIME_FORMAT
 
 
 from . import utils

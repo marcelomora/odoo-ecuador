@@ -77,6 +77,6 @@
             <field name="context">{'default_group_by_code': 1}</field>
         </record>
 
-        <menuitem action="action_report_vat_partner_tree" id="menu_action_vat_partner" parent="account.menu_finance_entries" sequence="200"/>
+        <!-- <menuitem action="action_report_vat_partner_tree" id="menu_action_vat_partner" parent="account.menu_finance_entries" sequence="200"/> -->
     </data>
 </odoo>

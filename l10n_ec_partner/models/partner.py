@@ -78,10 +78,17 @@ class ResPartner(models.Model):
         else:
             self.tipo_persona = '0'
 
+    @api.depends('vat')
+    def _compute_identifier(self):
+        if not self.vat:
+            return "9999999999"
+        return self.vat[2:]
+    
     identifier = fields.Char(
         'Cedula/ RUC',
-        size=13,
         required=False,
+        compute='_compute_identifier',
+        store=False,
         help='Identificación o Registro Unico de Contribuyentes')
 
     vat_type = fields.Selection(
