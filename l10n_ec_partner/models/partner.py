@@ -78,11 +78,11 @@ class ResPartner(models.Model):
         else:
             self.tipo_persona = '0'
 
+    @api.multi
     @api.depends('vat')
     def _compute_identifier(self):
-        if not self.vat:
-            return "9999999999"
-        return self.vat[2:]
+        for partner in self:
+            partner.identifier = partner.vat and partner.vat[2:] or "9999999999"
     
     identifier = fields.Char(
         'Cedula/ RUC',

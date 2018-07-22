@@ -388,7 +388,7 @@ class AccountInvoice(models.Model):
     @api.multi
     @api.returns('self')
     def refund(self, date_invoice=None, date=None, description=None, journal_id=None):  # noqa
-        new_invoices = super(Invoice, self).refund(date_invoice, date, description, journal_id)  # noqa
+        new_invoices = super(AccountInvoice, self).refund(date_invoice, date, description, journal_id)  # noqa
         new_invoices._onchange_journal_id()
         return new_invoices
 
