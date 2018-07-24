@@ -64,23 +64,26 @@ class AccountAuthorisation(models.Model):
             res.append((record.id, name))
         return res
 
-    @api.one
-    @api.depends('expiration_date')
+    @api.multi
+    @api.depends('is_electronic', 'expiration_date')
     def _compute_active(self):
         """
         Check the due_date to give the value active field
         """
-        if not self.expiration_date:
-            return True
-        now = datetime.strptime(time.strftime("%Y-%m-%d"), '%Y-%m-%d')
-        due_date = datetime.strptime(self.expiration_date, '%Y-%m-%d')
-        self.active = now < due_date
+        for auth in self:
+            if auth.is_electronic or not auth.expiration_date:
+                auth.active = True
+                continue
+
+            now = datetime.strptime(time.strftime("%Y-%m-%d"), '%Y-%m-%d')
+            due_date = datetime.strptime(auth.expiration_date, '%Y-%m-%d')
+            auth.active = now < due_date
 
     def _get_type(self):
         return self._context.get('type', 'in_invoice')  # pylint: disable=E1101
 
     def _get_in_type(self):
-        return self._context.get('in_type', 'externo')
+        return self._context.get('in_type', 'external')
 
     def _get_partner(self):
         partner = self.env.user.company_id.partner_id
@@ -135,7 +138,7 @@ class AccountAuthorisation(models.Model):
     active = fields.Boolean(
         compute='_compute_active',
         string='Active',
-        store=True,
+        store=False,
         default=True
         )
     in_type = fields.Selection(

@@ -102,10 +102,8 @@
         <field name="model">account.retention</field>
         <field name="inherit_id" ref="l10n_ec_withholding.view_account_retention_form"/>
         <field name="arch" type="xml">
-          <xpath expr="//button[@name='button_validate']" position="after">
-            <button name="action_generate_document" type="object"
-                    attrs="{'invisible':['|',('autorizado_sri','=',True),('state','!=','done')]}"
-                    string="Generar Doc. Electrónica" class="oe_highlight" icon="fa-rss"/>
+          <xpath expr="//field[@name='name']" position="after">
+              <button name="retention_print" string="Imprimir" type="object" icon="fa-print" class="oe_inline oe_stat_button oe_right" states="done" attrs="{'invisible': [('in_type','=','ret_out_invoice')]}"/>
           </xpath>
 
             <xpath expr="//field[@name='move_id']" position="after">

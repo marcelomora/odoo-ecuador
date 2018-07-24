@@ -7,8 +7,10 @@ import itertools
 
 from jinja2 import Environment, FileSystemLoader
 
-from openerp import models, api
+from openerp import fields, models, api, _
 from openerp.exceptions import Warning as UserError
+from openerp.exceptions import ValidationError
+from openerp.tools import DEFAULT_SERVER_DATE_FORMAT, DEFAULT_SERVER_DATETIME_FORMAT
 
 from . import utils
 from ..xades.sri import DocumentXML
@@ -21,8 +23,13 @@ class AccountWithdrawing(models.Model):
     _inherit = ['account.retention', 'account.edocument']
     _logger = logging.getLogger(_name)
 
+
+    reference = fields.Char(
+        "Reference",
+        compute=lambda self: self.name and self.name.split('-')[2] or "000000000")
+
     def get_secuencial(self):
-        return getattr(self, 'name')[6:15]
+        return getattr(self, 'name')[8:17]
 
     def _info_withdrawing(self, withdrawing):
         """
@@ -30,14 +37,20 @@ class AccountWithdrawing(models.Model):
         # generar infoTributaria
         company = withdrawing.company_id
         partner = withdrawing.invoice_id.partner_id
+        if not partner.vat_type:
+            raise ValidationError(_("Partner must have a VAT type."))
+        if not partner.identifier:
+            raise ValidationError(_("Partner must have an identifier."))
+        if not withdrawing.tax_ids:
+            raise ValidationError(_("Withdrawing must have taxes."))
         infoCompRetencion = {
             'fechaEmision': time.strftime('%d/%m/%Y', time.strptime(withdrawing.date, '%Y-%m-%d')),  # noqa
             'dirEstablecimiento': company.street,
             'obligadoContabilidad': 'SI',
-            'tipoIdentificacionSujetoRetenido': utils.tipoIdentificacion[partner.type_ced_ruc],  # noqa
+            'tipoIdentificacionSujetoRetenido': utils.tipoIdentificacion[partner.vat_type],  # noqa
             'razonSocialSujetoRetenido': partner.name,
-            'identificacionSujetoRetenido': partner.ced_ruc,
-            'periodoFiscal': withdrawing.period_id.name,
+            'identificacionSujetoRetenido': partner.identifier,
+            'periodoFiscal': time.strftime('%m/%Y', time.strptime(withdrawing.date, DEFAULT_SERVER_DATE_FORMAT)),
             }
         if company.company_registry:
             infoCompRetencion.update({'contribuyenteEspecial': company.company_registry})  # noqa
@@ -47,23 +60,23 @@ class AccountWithdrawing(models.Model):
         """
         """
         def get_codigo_retencion(linea):
-            if linea.tax_group in ['ret_vat_b', 'ret_vat_srv']:
-                return utils.tabla21[line.percent]
+            if linea.group_id.code in ['ret_vat_b', 'ret_vat_srv']:
+                return utils.tabla21[line.tax_id.percent_report]
             else:
-                code = linea.base_code_id and linea.base_code_id.code or linea.tax_code_id.code  # noqa
-                return code
+                # code = linea.base_code_id and linea.base_code_id.code or linea.tax_code_id.code  # noqa
+                return linea.group_id.code
 
         impuestos = []
         for line in retention.tax_ids:
             impuesto = {
-                'codigo': utils.tabla20[line.tax_group],
+                'codigo': utils.tabla20[line.group_id.code],
                 'codigoRetencion': get_codigo_retencion(line),
                 'baseImponible': '%.2f' % (line.base),
-                'porcentajeRetener': str(line.percent),
+                'porcentajeRetener': str(line.tax_id.percent_report),
                 'valorRetenido': '%.2f' % (abs(line.amount)),
                 'codDocSustento': retention.invoice_id.sustento_id.code,
-                'numDocSustento': line.num_document,
-                'fechaEmisionDocSustento': time.strftime('%d/%m/%Y', time.strptime(retention.invoice_id.date_invoice, '%Y-%m-%d'))  # noqa
+                'numDocSustento': retention.invoice_id.invoice_number[:15],
+                'fechaEmisionDocSustento': time.strftime('%d/%m/%Y', time.strptime(retention.invoice_id.date_invoice, DEFAULT_SERVER_DATE_FORMAT))  # noqa
             }
             impuestos.append(impuesto)
         return {'impuestos': impuestos}
@@ -97,6 +110,7 @@ class AccountWithdrawing(models.Model):
     @api.multi
     def action_generate_document(self):
         """
+        Generate SRI electronic voucher
         """
         for obj in self:
             self.check_date(obj.date)
@@ -127,7 +141,7 @@ class AccountWithdrawing(models.Model):
             return True
 
     @api.multi
-    def retention_print(self):
+    def print_retention(self):
         return self.env['report'].get_action(
             self,
             'l10n_ec_einvoice.report_eretention'

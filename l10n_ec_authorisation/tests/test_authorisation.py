@@ -70,7 +70,7 @@ class TestAuthorisation(TransactionCase):
                 'num_start': 1000,
                 'num_end': 3000,
                 'expiration_date': '2018-12-31',
-                'in_type': 'externo',
+                'in_type': 'external',
                 'type_id': type_doc.id,
                 'partner_id': partner.id
             }
@@ -104,7 +104,7 @@ class TestAuthorisation(TransactionCase):
                 'num_start': 1000,
                 'num_end': 3000,
                 'expiration_date': '2018-12-31',
-                'in_type': 'externo',
+                'in_type': 'external',
                 'type_id': type_doc.id,
                 'partner_id': partner.id
             }

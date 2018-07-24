@@ -7,13 +7,15 @@ from datetime import datetime
 from odoo import (
     api,
     fields,
-    models
+    models,
+    _
 )
 from odoo.exceptions import (
     Warning as UserError,
     ValidationError
 )
 from . import utils
+from openerp.tools import DEFAULT_SERVER_DATE_FORMAT
 
 
 class AccountWithdrawing(models.Model):
@@ -65,7 +67,6 @@ class AccountWithdrawing(models.Model):
     name = fields.Char(
         'Número',
         size=64,
-        readonly=True,
         states=STATES_VALUE,
         copy=False
         )
@@ -197,27 +198,29 @@ class AccountWithdrawing(models.Model):
     @api.constrains('date')
     def _check_date(self):
         if self.date and self.invoice_id:
-            inv_date = datetime.strptime(self.invoice_id.date_invoice, '%Y-%m-%d')  # noqa
-            ret_date = datetime.strptime(self.date, '%Y-%m-%d')  # noqa
+            inv_date = datetime.strptime(self.invoice_id.date_invoice, DEFAULT_SERVER_DATE_FORMAT)
+            ret_date = datetime.strptime(self.date, DEFAULT_SERVER_DATE_FORMAT)
             days = ret_date - inv_date
-            if days.days not in range(1, 6):
-                raise ValidationError(utils.CODE_701)  # noqa
 
-    @api.onchange('name')
-    @api.constrains('name')
-    def _onchange_name(self):
-        length = {
-            'in_invoice': 9,
-            'liq_purchase': 9,
-            'out_invoice': 15
-        }
-        if not self.name or not self.type:
-            return
-        if not len(self.name) == length[self.type] or not self.name.isdigit():
-            raise UserError(u'Nro incorrecto. Debe ser de 15 dígitos.')
-        if self.in_type == 'ret_in_invoice':
-            if not self.auth_id.is_valid_number(int(self.name)):
-                raise UserError('Nro no pertenece a la secuencia.')
+            if days.days > 5:
+                raise ValidationError(_("You only have 5 days to issue a withholding tax voucher"))  # noqa
+
+    # @api.onchange('name')
+    # @api.constrains('name')
+    # def _onchange_name(self):
+    #     length = {
+    #         'in_invoice': 9,
+    #         'liq_purchase': 9,
+    #         'out_invoice': 15
+    #     }
+    #     import wdb; wdb.set_trace()
+    #     if not self.name or not self.type:
+    #         return
+    #     if not len(self.name) == length[self.type] or not self.name.isdigit():
+    #         raise UserError(u'Nro incorrecto. Debe ser de 15 dígitos.')
+    #     if self.in_type == 'ret_in_invoice':
+    #         if not self.auth_id.is_valid_number(int(self.name)):
+    #             raise UserError('Nro no pertenece a la secuencia.')
 
     @api.multi
     def unlink(self):
