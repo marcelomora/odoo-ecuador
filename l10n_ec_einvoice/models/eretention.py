@@ -139,10 +139,10 @@ class AccountWithdrawing(models.Model):
             auth_document = self.render_authorized_document(auth)
             self.update_document(auth, [access_key, issuing_code])
             attach = self.add_attachment(auth_document, auth)
-            self.send_document(
-                attachments=[a.id for a in attach],
-                tmpl='l10n_ec_einvoice.email_template_eretention'
-            )
+            # self.send_document(
+            #     attachments=[a.id for a in attach],
+            #     tmpl='l10n_ec_einvoice.email_template_eretention'
+            # )
             return True
 
     @api.multi
