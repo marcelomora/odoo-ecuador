@@ -14,6 +14,7 @@
         'views/einvoice_view.xml',
         'views/partner_view.xml',
         'views/report_einvoice.xml',
+        'views/report_eretention.xml',
         'views/edocument_layouts.xml',
     ],
     'depends': [

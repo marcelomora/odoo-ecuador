@@ -213,7 +213,6 @@ class AccountWithdrawing(models.Model):
     #         'liq_purchase': 9,
     #         'out_invoice': 15
     #     }
-    #     import wdb; wdb.set_trace()
     #     if not self.name or not self.type:
     #         return
     #     if not len(self.name) == length[self.type] or not self.name.isdigit():
@@ -250,7 +249,7 @@ class AccountWithdrawing(models.Model):
 
             sequence = wd.auth_id.sequence_id
             if self.type != 'out_invoice' and not number:
-                number = sequence.next_by_id()
+                number = "{}{}{}".format(wd.auth_id.entity, wd.auth_id.emission_point, sequence.next_by_id()) 
             wd.write({'name': number})
         return True
 

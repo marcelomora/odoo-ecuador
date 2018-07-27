@@ -100,9 +100,7 @@ class Edocument(models.AbstractModel):
             numero = getattr(self, 'invoice_number')
         elif name == 'account.retention':
             auth = self.company_id.partner_id.get_authorisation('ret_in_invoice')  # noqa
-            ld = self.date.split('-')
-            numero = getattr(self, 'name')
-            numero = numero[6:15]
+            numero = self.get_secuencial()
         return {
             'issuing_date': datetime.strptime(
                 self.date, DEFAULT_SERVER_DATE_FORMAT).strftime(

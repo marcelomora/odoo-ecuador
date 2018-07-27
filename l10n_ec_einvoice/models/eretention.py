@@ -26,10 +26,15 @@ class AccountWithdrawing(models.Model):
 
     reference = fields.Char(
         "Reference",
-        compute=lambda self: self.name and self.name.split('-')[2] or "000000000")
+        compute='_get_secuencial')
+
+    @api.depends('name')
+    def _get_secuencial(self):
+        self.reference = self.name and self.name[-9:] or "000000000"
 
     def get_secuencial(self):
-        return getattr(self, 'name')[8:17]
+        return self.name and self.name[-9:] or "000000000"
+        # return getattr(self, 'name')[-9:]
 
     def _info_withdrawing(self, withdrawing):
         """
