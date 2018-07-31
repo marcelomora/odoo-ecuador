@@ -11,6 +11,7 @@
         'data/data_einvoice.xml',
         'data/account.epayment.csv',
         'edi/einvoice_edi.xml',
+        'edi/eretention_edi.xml',
         'views/einvoice_view.xml',
         'views/partner_view.xml',
         'views/report_einvoice.xml',
