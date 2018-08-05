@@ -97,10 +97,11 @@ class Edocument(models.AbstractModel):
             seq = "{:09d}".format(int(self.reference)) 
             auth = self.company_id.partner_id.get_authorisation('out_invoice')
             ld = self.date_invoice.split('-')
-            numero = getattr(self, 'invoice_number')
+            series = "{}{}".format(self.auth_inv_id.entity,
+                self.auth_inv_id.emission_point)
         elif name == 'account.retention':
             auth = self.company_id.partner_id.get_authorisation('ret_in_invoice')  # noqa
-            numero = self.get_secuencial()
+            series = "{}{}".format(auth.entity, auth.emission_point)
         return {
             'issuing_date': datetime.strptime(
                 self.date, DEFAULT_SERVER_DATE_FORMAT).strftime(
@@ -109,9 +110,7 @@ class Edocument(models.AbstractModel):
             'voucher_type': utils.tipoDocumento[auth.type_id.code],
             'vat': self.company_id.partner_id.vat[2:],
             'env_service': self.company_id.env_service,
-            # 'series': "{}{}".format(self.auth_inv_id.entity,
-                # self.auth_inv_id.emission_point),
-            'series': "{}{}".format(auth.entity, auth.emission_point),
+            'series': series,
             'voucher_number': "{:09d}".format(int(self.reference)),
             'internal_code': "{:08d}".format(0),
             'issuing_type': self.company_id.issuing_code,

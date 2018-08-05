@@ -297,7 +297,7 @@ class AccountInvoice(models.Model):
         """
         if self.retention_id:
             self.retention_id.action_cancel()
-        super(Invoice, self).action_invoice_cancel()
+        super(AccountInvoice, self).action_invoice_cancel()
 
     @api.multi
     def action_invoice_draft(self):
@@ -310,7 +310,7 @@ class AccountInvoice(models.Model):
         for inv in self:
             if inv.retention_id:
                 inv.retention_id.unlink()
-        super(Invoice, self).action_invoice_draft()
+        super(AccountInvoice, self).action_invoice_draft()
         return True
 
     @api.multi

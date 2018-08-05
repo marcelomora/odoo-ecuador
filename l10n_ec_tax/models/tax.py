@@ -24,7 +24,7 @@ class AccountInvoiceTax(models.Model):
         store=True,
         string='Grupo'
     )
-    base = fields.Monetary(store=True)
+    # base = fields.Monetary(string='Base', compute='_compute_base_amount', store=True)
     code = fields.Char(
         related='tax_id.description',
         string='Código',
@@ -112,30 +112,6 @@ class AccountReportTax(models.TransientModel):
 class ReportVatPartner(models.Model):
     _name = 'report.vat.partner'
     _auto = False
-
-    @api.model_cr
-    def init(self):
-        tools.drop_view_if_exists(
-            self._cr,
-            'report_vat_partner'
-        )
-        sql = """
-        CREATE OR REPLACE VIEW report_vat_partner as (
-        SELECT min(ait.id) as id, ai.date as date,
-        ai.partner_id as partner_id, ai.type as type, ait.code as code,
-        ait.name as name, ait.group_id as tax_group, SUM(ait.base) as base,
-        ABS(SUM(amount)) AS total
-        FROM account_invoice_tax ait
-        INNER JOIN  account_invoice ai ON ait.invoice_id = ai.id
-        WHERE ai.state IN ('open', 'paid')
-        AND ai.type in ('in_invoice', 'out_invoice',
-        'out_refund', 'in_refund', 'liq_purchase')
-        GROUP BY ait.group_id, ait.name, ai.type,
-        ai.partner_id, ai.date, ait.code, ait.base
-        ORDER BY type
-        )
-        """
-        self._cr.execute(sql)
 
     id = fields.Integer('ID')
     date = fields.Date('Fecha Contable')
